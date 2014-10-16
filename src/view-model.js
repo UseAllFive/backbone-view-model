@@ -33,6 +33,8 @@
       setComputedAttributes: function(){
         _.each(this.computed_attributes, function(value, key){
           this.set(key, value.call(this));
+          this.trigger('change');
+          this.trigger('change:' + key);
         }, this);
       },
 
