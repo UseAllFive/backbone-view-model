@@ -5,6 +5,8 @@
 //
 // Documentation and Full License Available at:
 // http://github.com/tommyh/backbone-view-model
+// jshint ignore:start
+// jscs:disable
 
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -66,11 +68,12 @@
             sourceCollection instanceof Backbone.Collection
         ) {
             this.listenTo(sourceCollection, 'all', function(e, entity) {
-                var passThruEvents = ['add', 'remove', 'reset', 'destroy'];
+                var passThruEvents = ['add', 'remove', 'reset'];
 
                 if (e === 'sync') {
                     this.set(entity.models);
                 }
+
                 if (_.indexOf(passThruEvents, e) !== -1) {
                     this[e](entity);
                 }
@@ -92,6 +95,28 @@
         set: function(models, options) {
             models = this.wrapSourceModels(models);
             Collection.prototype.set.call(this, models, options);
+        },
+        remove: function(models, options) {
+            var singular = !_.isArray(models);
+            models = singular ? [models] : _.clone(models);
+            options || (options = {});
+            _.each(models, function(model) {
+                var index;
+                var viewModel;
+
+                viewModel = this.findWhere({ id: model.id });
+                delete this._byId[model.id];
+                delete this._byId[viewModel.cid];
+                index = this.indexOf(viewModel);
+                this.models.splice(index, 1);
+                this.length--;
+                if (!options.silent) {
+                  options.index = index;
+                  viewModel.trigger('remove', viewModel, this, options);
+                }
+                this._removeReference(viewModel, options);
+            }, this);
+            return singular ? models[0] : models;
         }
     });
 
